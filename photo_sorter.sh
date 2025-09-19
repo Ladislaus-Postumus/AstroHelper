@@ -1,15 +1,36 @@
 #!/usr/bin/env bash
 
-PHOTO_DIR=/home/pme/Pictures/astro/moon/2025.09.07
+if [[ $1 == "-h" || $1 == "--help" || $1 == "-?" ]] then
+	echo "This script will move astrophotos from <from directory> to <to directory> and sort them into lights/darks/biases/flats/testframes"
+	echo "Usage: photo-sorter.sh <from directory> <to directory>"
+	exit 0
+fi
 
-printhelp() {
-	echo "this is the help menu"
-	echo "by default this program scans the current directory and sorts all found photos"
-	echo "usage:"
-	echo "  -h: print this help text"
-	echo "  -f: from directory: move files from there"
-	echo "  -t: to directory: move files to this"
-}
+FROM_DIR=$1
+TO_DIR=$2
+ERRORS=0
+
+if [[ ! -d $FROM_DIR ]] then
+	echo "$FROM_DIR does not exist or is not a directory" >&2
+	ERRORS=1
+fi
+
+if [[ ! -n $(ls $FROM_DIR) ]] then
+	echo "$FROM_DIR does not contain any files" >&2
+	ERRORS=1
+fi
+
+if [[ ! -d $TO_DIR ]] then
+	echo "$TO_DIR does not exist or is not a directory" >&2
+	ERRORS=1
+fi
+
+if [[ ERRORS -eq 1 ]] then
+	exit 1
+fi
+
+
+# PHOTO_DIR=/home/pme/Pictures/astro/moon/2025.09.07
 
 getstats() {
   exiftool -s3 -T -n -q -$1 $PHOTO_DIR/*.CR2
@@ -29,19 +50,18 @@ scan_files() {
 
 count_meta() {
   local -n arr=$2
-  local most_count=0 local most_iso=0
-  for iso in "${!arr[@]}"; do
-    count=${arr[$iso]}
+  local most_count=0
+  local most_value=0
+
+  for value in "${!arr[@]}"; do
+    count=${arr[$value]}
     if (( count > most_count )); then
-      most_iso=$iso
+      most_value=$value
       most_count=$count
     fi
   done
 
-  printf "most used $1:\t$most_iso\n"
-  printf "photos using this value:\t$most_count\n"
-  printf "different "$1"s:\t${#arr[@]}\n"
-  printf "\n"
+  echo $most_value $most_count $amount
 }
 
 scanner() {
@@ -50,17 +70,22 @@ scanner() {
 }
 
 main() {
-  echo 1
+  declare -A focal_count
+  local most_value most_count amount
+  read -r most_value most_count amount <(scanner "FocalLength" focal_count)
+
+  printf "most used $1:\t$most_iso\n"
+  printf "photos using this value:\t$most_count\n"
+  printf "different "$1"s:\t${#arr[@]}\n"
+  printf "\n"
 }
 
-declare -A iso_count
-declare -A shutter_count
-declare -A focal_count
-declare -A temp_count
+#declare -A iso_count
+#declare -A shutter_count
+#declare -A temp_count
 
 #read -r distinct most < <(foo "/home/pme/Pictures/astro/moon/2025.09.07/")
 
-scanner "ISO" iso_count
-scanner "ShutterSpeed" shutter_count
-scanner "FocalLength" focal_count
-scanner "CameraTemperature" temp_count
+# scanner "ISO" iso_count
+# scanner "ShutterSpeed" shutter_count
+# scanner "CameraTemperature" temp_count
